@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MyFaveTimerM7.MainPage"
+             Shell.NavBarIsVisible="False" BackgroundColor="White">
+    <Grid>
+        <!-- 左右に10px, 下に30pxの透明エリアを付けた画像にする -->
+        <!-- Android は Resource/Images 配下に MauiImage として画像ファイルの登録が必要 -->
+        <Image Source="{OnPlatform ochawan3.png, WinUI=ochawan3_winui.png}" 
+               Aspect="AspectFill" Loaded="Image_Loaded">
+            <Image.Margin>
+                <OnPlatform x:TypeArguments="Thickness">
+                    <On Platform="WinUI" Value="-9,-32,-9,-9" />
+                    <On Platform="Android, iOS" Value="0,0,0,0" />
+                </OnPlatform>
+            </Image.Margin>
+        </Image>
+
+        <VerticalStackLayout
+            Spacing="25"
+            Padding="30,0"
+            VerticalOptions="Center">
+
+            <Label
+                Text="Hello, World!"
+                SemanticProperties.HeadingLevel="Level1"
+                FontSize="32"
+                HorizontalOptions="Center" />
+
+            <Label
+                Text="Welcome to .NET Multi-platform App UI"
+                SemanticProperties.HeadingLevel="Level2"
+                SemanticProperties.Description="Welcome to dot net Multi platform App U I"
+                FontSize="18"
+                HorizontalOptions="Center" />
+
+            <Button
+                x:Name="CounterBtn"
+                Text="Click me"
+                SemanticProperties.Hint="Counts the number of times you click"
+                Clicked="OnCounterClicked"
+                HorizontalOptions="Center" />
+
+        </VerticalStackLayout>
+    </Grid>
+
+</ContentPage>
