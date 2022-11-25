@@ -10,7 +10,7 @@ namespace MyFaveTimerM7
     {
         public partial void InitializeWindow(Window window, object parameter)
         {
-            const int WINDOW_FRAME_THICKNESS = 8;
+            const int WINDOW_FRAME_THICKNESS = 3;
             const int WINDOW_TITLE_HEIGHT = 31;
 
             var imageControl =  (Microsoft.Maui.Controls.Image)parameter;
@@ -21,7 +21,7 @@ namespace MyFaveTimerM7
             using var sourceStream = FileSystem.OpenAppPackageFileAsync(fileName).Result;
             using var sourceBitmap = (Bitmap)Image.FromStream(sourceStream);
 
-            // 下地となる透明な画像を作る。サイズは元画像の両幅から8px(ウィンドウフレームの幅)ずつはみ出すサイズで。
+            // 下地となる透明な画像を作る。サイズは元画像の両側にウィンドウフレームの幅を足したサイズで。
             var layerdBitMap = new Bitmap(sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2, sourceBitmap.Height);
 
             // 透明な背景に画像を重ねる
@@ -43,17 +43,16 @@ namespace MyFaveTimerM7
                 SetWindowRgn(hwnd, hrgn, true);
             }
 
-            //const int GWL_STYLE = -16;
-            //const Int64 WS_THICKFRAME = 0x00040000L;
-            //const Int64 WS_OVERLAPPED = 0x00000000L;
-            //const Int64 WS_CAPTION = 0x00C00000L;
-            //const Int64 WS_SYSMENU = 0x00080000L;
-            //const Int64 WS_MAXIMIZEBOX = 0x00010000L;
-            //const Int64 WS_MINIMIZEBOX = 0x00020000L;
-            //const Int64 WS_BORDER = 0x00800000L;
+            const int GWL_STYLE = -16;
+            const Int64 WS_SIZEBOX = 0x00040000L; // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
+            const Int64 WS_BORDER = 0x00800000L; // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
+            const Int64 WS_CAPTION = 0x00C00000L; // Mauiでは効かない
+            const Int64 WS_SYSMENU = 0x00080000L; // Mauiでは効かない
+            const Int64 WS_MAXIMIZEBOX = 0x00010000L; // Mauiでは効かない
+            const Int64 WS_MINIMIZEBOX = 0x00020000L; // Mauiでは効かない
 
-            //Int64 style = GetWindowLong(hwnd, GWL_STYLE);
-            //SetWindowLong(hwnd, GWL_STYLE, style & ~WS_THICKFRAME & ~WS_CAPTION & ~WS_SYSMENU & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX & ~WS_BORDER);
+            Int64 style = GetWindowLong(hwnd, GWL_STYLE);
+            SetWindowLong(hwnd, GWL_STYLE, style & ~WS_SIZEBOX & ~WS_BORDER & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX);
 
             // Imageコントロールのサイズが画像と同じピクセルになるようにウィンドウサイズを固定
             // ※.NET 6だと、Window.Width, Heightがないので .NET7必須。
