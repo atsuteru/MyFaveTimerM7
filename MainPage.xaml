@@ -8,7 +8,7 @@
         <!-- Android は Resource/Images 配下に MauiImage として画像ファイルの登録が必要 -->
         <!-- WinUI は Resource/Raw 配下に MauiAsset として画像ファイルの登録が必要 -->
         <!-- 画像ファイル名は、英小文字で始まる英数字とアンダースコアで命名しなければならない(Androdの制限) -->
-        <Image Source="test500px.png" Aspect="AspectFill" Loaded="Image_Loaded"/>
+        <Image Source="ochawan3.png" Aspect="AspectFill" Loaded="Image_Loaded"/>
         <VerticalStackLayout
             Spacing="25"
             Padding="30,0"
@@ -18,14 +18,14 @@
                 Text="Hello, World!"
                 SemanticProperties.HeadingLevel="Level1"
                 FontSize="32"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center"/>
 
             <Label
                 Text="Welcome to .NET Multi-platform App UI"
                 SemanticProperties.HeadingLevel="Level2"
                 SemanticProperties.Description="Welcome to dot net Multi platform App U I"
                 FontSize="18"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center"/>
 
             <Button
                 x:Name="CounterBtn"

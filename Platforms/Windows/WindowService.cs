@@ -1,5 +1,6 @@
 ﻿using MyFaveTimerM7.Platforms.Windows;
 using System.Drawing;
+using Point = System.Drawing.Point;
 
 namespace MyFaveTimerM7
 {
@@ -13,7 +14,7 @@ namespace MyFaveTimerM7
 
             SetImageFillToWindow(window, imageControl);
 
-            SetDragMovable(window, imageControl);
+            SetDragMovable(window);
         }
 
         private static void SetWindowStyle(Window window)
@@ -35,9 +36,6 @@ namespace MyFaveTimerM7
             const int WINDOW_FRAME_THICKNESS = 3;
             const int WINDOW_TITLE_SIZEBOX_HEIGHT = 31; // DisableSizeCursor: 8, HideTitleBar: 31
             const int WINDOW_TITLE_HEIGHT = 31;
-
-            // Windowハンドルの取得
-            IntPtr hwnd = window.GetWindowHandle();
 
             // 塗りつぶしに利用するソース画像を取得する
             using var sourceBitmap = imageControl.GetBitmap();
@@ -73,9 +71,9 @@ namespace MyFaveTimerM7
             //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
         }
 
-        private static void SetDragMovable(Window window, Microsoft.Maui.Controls.Image imageControl)
+        private static void SetDragMovable(Window window)
         {
-            PInvoke.POINT baseScreenPoint = default;
+            Point baseScreenPoint = default;
             double baseWindowPositionX = 0d;
             double baseWindowPositionY = 0d;
 
@@ -83,26 +81,22 @@ namespace MyFaveTimerM7
             IntPtr hwnd = window.GetWindowHandle();
 
             // 画像上でのドラッグ移動にあわせて、ウィンドウ自体を移動させる
-            imageControl.SubscribePointerDragMoving(
+            window.SubscribePointerDragMoving(
                 onPointerPressed: (pointerPoint) =>
                 {
-                    baseScreenPoint = new PInvoke.POINT() { x = (int)pointerPoint.Position.X, y = (int)pointerPoint.Position.Y };
-                    PInvoke.User32.ClientToScreen(hwnd, ref baseScreenPoint);
+                    baseScreenPoint = window.ConvertPointerToScreen(pointerPoint);
                     baseWindowPositionX = window.X;
                     baseWindowPositionY = window.Y;
                 },
                 onPointerDragMoved: (pointerPoint) =>
                 {
-                    var currentScreenPoint = new PInvoke.POINT() { x = (int)pointerPoint.Position.X, y = (int)pointerPoint.Position.Y };
-                    PInvoke.User32.ClientToScreen(hwnd, ref currentScreenPoint);
-                    var screenPointOffsetX = currentScreenPoint.x - baseScreenPoint.x;
-                    var screenPointOffsetY = currentScreenPoint.y - baseScreenPoint.y;
-                    window.X = baseWindowPositionX + screenPointOffsetX;
-                    window.Y = baseWindowPositionY + screenPointOffsetY;
+                    var currentScreenPoint = window.ConvertPointerToScreen(pointerPoint);
+                    window.X = baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X);
+                    window.Y = baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y);
                     //差は感じない
                     //PInvoke.User32.SetWindowPos(hwnd, PInvoke.User32.SpecialWindowHandles.HWND_TOP,
-                    //    baseWindowPositionX + screenPointOffsetX,
-                    //    baseWindowPositionY + screenPointOffsetY,
+                    //    baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X),
+                    //    baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y),
                     //    0, 0,
                     //    PInvoke.User32.SetWindowPosFlags.SWP_NOSIZE);
                 });
