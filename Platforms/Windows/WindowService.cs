@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using Windows.Devices.Input;
@@ -12,7 +13,7 @@ namespace MyFaveTimerM7
         public partial void InitializeWindow(Window window, object parameter)
         {
             const int WINDOW_FRAME_THICKNESS = 3;
-            const int WINDOW_TITLE_SIZEBOX_HEIGHT = 8;
+            const int WINDOW_TITLE_SIZEBOX_HEIGHT = 31; // DisableSizeCursor: 8, HideTitleBar: 31
             const int WINDOW_TITLE_HEIGHT = 31;
 
             var imageControl =  (Microsoft.Maui.Controls.Image)parameter;
@@ -72,6 +73,56 @@ namespace MyFaveTimerM7
             //いずれにせよ全体のドラッグ＆ドロップで移動できなければ話にならない
             //winUIWindow.ExtendsContentIntoTitleBar = true;
             //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
+
+            bool isPointerPressed = false;
+            Microsoft.UI.Input.PointerPoint basePointerPoint = null;
+            PInvoke.POINT baseScreenPoint = default;
+            int baseWindowPositionX = 0;
+            int baseWindowPositionY = 0;
+            var winuiImage = (Microsoft.UI.Xaml.Controls.Image)imageControl.Handler.PlatformView;
+            winuiImage.PointerEntered += (s, e) =>
+            {
+                isPointerPressed = false;
+                Debug.WriteLine($"PointerEntered");
+            };
+            winuiImage.PointerExited += (s, e) =>
+            {
+                isPointerPressed = false;
+                Debug.WriteLine($"PointerExited");
+            };
+            winuiImage.PointerPressed += (s, e) =>
+            {
+                isPointerPressed = true;
+                basePointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
+                baseScreenPoint = new PInvoke.POINT() { x = (int)basePointerPoint.Position.X, y = (int)basePointerPoint.Position.Y };
+                PInvoke.User32.ClientToScreen(hwnd, ref baseScreenPoint);
+                baseWindowPositionX = (int)window.X;
+                baseWindowPositionY = (int)window.Y;
+                Debug.WriteLine($"PointerPressed: {basePointerPoint.Position}, ({baseWindowPositionX},{baseWindowPositionY})");
+            };
+            winuiImage.PointerReleased += (s, e) =>
+            {
+                isPointerPressed = false;
+                Debug.WriteLine($"PointerReleased");
+            };
+            winuiImage.PointerMoved += (s, e) =>
+            {
+                if (isPointerPressed)
+                {
+                    var currentPointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
+                    var currentScreenPoint = new PInvoke.POINT() { x = (int)currentPointerPoint.Position.X, y = (int)currentPointerPoint.Position.Y };
+                    PInvoke.User32.ClientToScreen(hwnd, ref currentScreenPoint);
+                    var screenPointOffsetX = currentScreenPoint.x - baseScreenPoint.x;
+                    var screenPointOffsetY = currentScreenPoint.y - baseScreenPoint.y;
+                    //window.X = baseWindowPositionX + screenPointOffsetX;
+                    //window.Y = baseWindowPositionY + screenPointOffsetY;
+                    PInvoke.User32.SetWindowPos(hwnd, PInvoke.User32.SpecialWindowHandles.HWND_TOP,
+                        baseWindowPositionX + screenPointOffsetX,
+                        baseWindowPositionY + screenPointOffsetY,
+                        0, 0,
+                        PInvoke.User32.SetWindowPosFlags.SWP_NOSIZE);
+                }
+            };
         }
 
         [DllImport("User32.dll", SetLastError = true, CharSet = CharSet.Auto)]
