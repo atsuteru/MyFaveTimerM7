@@ -1,10 +1,5 @@
-﻿using System.Diagnostics;
+﻿using MyFaveTimerM7.Platforms.Windows;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Runtime.InteropServices;
-using Windows.Devices.Input;
-using Image = System.Drawing.Image;
-using Region = System.Drawing.Region;
 
 namespace MyFaveTimerM7
 {
@@ -12,55 +7,58 @@ namespace MyFaveTimerM7
     {
         public partial void InitializeWindow(Window window, object parameter)
         {
+            var imageControl = (Microsoft.Maui.Controls.Image)parameter;
+
+            SetWindowStyle(window);
+
+            SetImageFillToWindow(window, imageControl);
+
+            SetDragMovable(window, imageControl);
+        }
+
+        private static void SetWindowStyle(Window window)
+        {
+            // Windowハンドルの取得
+            IntPtr hwnd = window.GetWindowHandle();
+
+            // Windowスタイルの設定
+            var style = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE);
+            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE,
+                style
+                & ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
+                & ~PInvoke.User32.SetWindowLongFlags.WS_BORDER // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
+                );
+        }
+
+        private static void SetImageFillToWindow(Window window, Microsoft.Maui.Controls.Image imageControl)
+        {
             const int WINDOW_FRAME_THICKNESS = 3;
             const int WINDOW_TITLE_SIZEBOX_HEIGHT = 31; // DisableSizeCursor: 8, HideTitleBar: 31
             const int WINDOW_TITLE_HEIGHT = 31;
 
-            var imageControl =  (Microsoft.Maui.Controls.Image)parameter;
-            var fileImageSource = imageControl.Source as FileImageSource;
-            var fileName = fileImageSource.File;
+            // Windowハンドルの取得
+            IntPtr hwnd = window.GetWindowHandle();
 
-            // WinUIでは、画像は Resource/Raw 配下に MauiAsset として登録されている必要がある。
-            using var sourceStream = FileSystem.OpenAppPackageFileAsync(fileName).Result;
-            using var sourceBitmap = (Bitmap)Image.FromStream(sourceStream);
+            // 塗りつぶしに利用するソース画像を取得する
+            using var sourceBitmap = imageControl.GetBitmap();
 
             // 下地となる透明な画像を作る。サイズは元画像の両側にウィンドウフレームの幅を足したサイズで。
-            var layerdBitMap = new Bitmap(sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2, sourceBitmap.Height + WINDOW_TITLE_SIZEBOX_HEIGHT);
+            using var layerdBitMap = new Bitmap(sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2, sourceBitmap.Height + WINDOW_TITLE_SIZEBOX_HEIGHT);
 
             // 透明な背景に画像を重ねる
             using (var g = Graphics.FromImage(layerdBitMap))
             {
                 g.DrawImage(sourceBitmap, WINDOW_FRAME_THICKNESS, WINDOW_TITLE_SIZEBOX_HEIGHT, sourceBitmap.Width, sourceBitmap.Height);
             }
-
-            // 背景画像から、透明でない部分だけを抜き出したリージョンを作る
-            using GraphicsPath graphicsPath = CalculateControlGraphicsPath(layerdBitMap);
-            var reagion = new Region(graphicsPath);
+            var reagion = layerdBitMap.ToRegion();
 
             // 透明でない部分だけを抜き出したリージョンをウィンドウの表示領域として設定する
-            MauiWinUIWindow winUIWindow = (MauiWinUIWindow)window.Handler.PlatformView;
-            IntPtr hwnd = winUIWindow.WindowHandle;
-            using (var graphics = Graphics.FromHwnd(hwnd))
-            {
-                IntPtr hrgn = reagion.GetHrgn(graphics);
-                SetWindowRgn(hwnd, hrgn, true);
-            }
-
-            var style = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE);
-            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE, 
-                style 
-                & ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
-                & ~PInvoke.User32.SetWindowLongFlags.WS_BORDER // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
-                );
+            window.SetWindowRegion(reagion);
 
             // Imageコントロールのサイズが画像と同じピクセルになるようにウィンドウサイズを固定
             // ※.NET 6だと、Window.Width, Heightがないので .NET7必須。
             window.Width = sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2;
-            window.MinimumWidth = window.Width;
-            window.MaximumWidth = window.Width;
             window.Height = sourceBitmap.Height + WINDOW_TITLE_HEIGHT + WINDOW_FRAME_THICKNESS;
-            window.MinimumHeight = window.Height;
-            window.MaximumHeight = window.Height;
 
             // 画像をタイトルバー部分に重ねる
             imageControl.Margin = new Thickness(
@@ -73,114 +71,41 @@ namespace MyFaveTimerM7
             //いずれにせよ全体のドラッグ＆ドロップで移動できなければ話にならない
             //winUIWindow.ExtendsContentIntoTitleBar = true;
             //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
+        }
 
-            bool isPointerPressed = false;
-            Microsoft.UI.Input.PointerPoint basePointerPoint = null;
+        private static void SetDragMovable(Window window, Microsoft.Maui.Controls.Image imageControl)
+        {
             PInvoke.POINT baseScreenPoint = default;
-            int baseWindowPositionX = 0;
-            int baseWindowPositionY = 0;
-            var winuiImage = (Microsoft.UI.Xaml.Controls.Image)imageControl.Handler.PlatformView;
-            winuiImage.PointerEntered += (s, e) =>
-            {
-                isPointerPressed = false;
-                Debug.WriteLine($"PointerEntered");
-            };
-            winuiImage.PointerExited += (s, e) =>
-            {
-                isPointerPressed = false;
-                Debug.WriteLine($"PointerExited");
-            };
-            winuiImage.PointerPressed += (s, e) =>
-            {
-                isPointerPressed = true;
-                basePointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
-                baseScreenPoint = new PInvoke.POINT() { x = (int)basePointerPoint.Position.X, y = (int)basePointerPoint.Position.Y };
-                PInvoke.User32.ClientToScreen(hwnd, ref baseScreenPoint);
-                baseWindowPositionX = (int)window.X;
-                baseWindowPositionY = (int)window.Y;
-                Debug.WriteLine($"PointerPressed: {basePointerPoint.Position}, ({baseWindowPositionX},{baseWindowPositionY})");
-            };
-            winuiImage.PointerReleased += (s, e) =>
-            {
-                isPointerPressed = false;
-                Debug.WriteLine($"PointerReleased");
-            };
-            winuiImage.PointerMoved += (s, e) =>
-            {
-                if (isPointerPressed)
+            double baseWindowPositionX = 0d;
+            double baseWindowPositionY = 0d;
+
+            // Windowハンドルの取得
+            IntPtr hwnd = window.GetWindowHandle();
+
+            // 画像上でのドラッグ移動にあわせて、ウィンドウ自体を移動させる
+            imageControl.SubscribePointerDragMoving(
+                onPointerPressed: (pointerPoint) =>
                 {
-                    var currentPointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
-                    var currentScreenPoint = new PInvoke.POINT() { x = (int)currentPointerPoint.Position.X, y = (int)currentPointerPoint.Position.Y };
+                    baseScreenPoint = new PInvoke.POINT() { x = (int)pointerPoint.Position.X, y = (int)pointerPoint.Position.Y };
+                    PInvoke.User32.ClientToScreen(hwnd, ref baseScreenPoint);
+                    baseWindowPositionX = window.X;
+                    baseWindowPositionY = window.Y;
+                },
+                onPointerDragMoved: (pointerPoint) =>
+                {
+                    var currentScreenPoint = new PInvoke.POINT() { x = (int)pointerPoint.Position.X, y = (int)pointerPoint.Position.Y };
                     PInvoke.User32.ClientToScreen(hwnd, ref currentScreenPoint);
                     var screenPointOffsetX = currentScreenPoint.x - baseScreenPoint.x;
                     var screenPointOffsetY = currentScreenPoint.y - baseScreenPoint.y;
-                    //window.X = baseWindowPositionX + screenPointOffsetX;
-                    //window.Y = baseWindowPositionY + screenPointOffsetY;
-                    PInvoke.User32.SetWindowPos(hwnd, PInvoke.User32.SpecialWindowHandles.HWND_TOP,
-                        baseWindowPositionX + screenPointOffsetX,
-                        baseWindowPositionY + screenPointOffsetY,
-                        0, 0,
-                        PInvoke.User32.SetWindowPosFlags.SWP_NOSIZE);
-                }
-            };
-        }
-
-        [DllImport("User32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
-
-        // https://www.codeproject.com/Articles/6048/Creating-Bitmap-Regions-for-Forms-and-Buttons
-        private static GraphicsPath CalculateControlGraphicsPath(Bitmap bitmap)
-        {
-            // Create GraphicsPath for our bitmap calculation
-            GraphicsPath graphicsPath = new GraphicsPath();
-
-            // Use the top left pixel as our transparent color
-            System.Drawing.Color colorTransparent = bitmap.GetPixel(0, 0);
-
-            // This is to store the column value where an opaque pixel is first found.
-            // This value will determine where we start scanning for trailing 
-            // opaque pixels.
-            int colOpaquePixel = 0;
-
-            // Go through all rows (Y axis)
-            for (int row = 0; row < bitmap.Height; row++)
-            {
-                // Reset value
-                colOpaquePixel = 0;
-
-                // Go through all columns (X axis)
-                for (int col = 0; col < bitmap.Width; col++)
-                {
-                    // If this is an opaque pixel, mark it and search 
-                    // for anymore trailing behind
-                    if (bitmap.GetPixel(col, row) != colorTransparent)
-                    {
-                        // Opaque pixel found, mark current position
-                        colOpaquePixel = col;
-
-                        // Create another variable to set the current pixel position
-                        int colNext = col;
-
-                        // Starting from current found opaque pixel, search for 
-                        // anymore opaque pixels trailing behind, until a transparent
-                        // pixel is found or minimum width is reached
-                        for (colNext = colOpaquePixel; colNext < bitmap.Width; colNext++)
-                            if (bitmap.GetPixel(colNext, row) == colorTransparent)
-                                break;
-
-                        // Form a rectangle for line of opaque pixels found and 
-                        // add it to our graphics path
-                        graphicsPath.AddRectangle(new Rectangle(colOpaquePixel,
-                                                   row, colNext - colOpaquePixel, 1));
-
-                        // No need to scan the line of opaque pixels just found
-                        col = colNext;
-                    }
-                }
-            }
-
-            // Return calculated graphics path
-            return graphicsPath;
+                    window.X = baseWindowPositionX + screenPointOffsetX;
+                    window.Y = baseWindowPositionY + screenPointOffsetY;
+                    //差は感じない
+                    //PInvoke.User32.SetWindowPos(hwnd, PInvoke.User32.SpecialWindowHandles.HWND_TOP,
+                    //    baseWindowPositionX + screenPointOffsetX,
+                    //    baseWindowPositionY + screenPointOffsetY,
+                    //    0, 0,
+                    //    PInvoke.User32.SetWindowPosFlags.SWP_NOSIZE);
+                });
         }
     }
 }
