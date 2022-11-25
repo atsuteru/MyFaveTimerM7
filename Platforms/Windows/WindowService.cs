@@ -10,20 +10,31 @@ namespace MyFaveTimerM7
     {
         public partial void InitializeWindow(Window window, object parameter)
         {
+            const int WINDOW_FRAME_THICKNESS = 8;
+            const int WINDOW_TITLE_HEIGHT = 31;
+
             var imageControl =  (Microsoft.Maui.Controls.Image)parameter;
             var fileImageSource = imageControl.Source as FileImageSource;
             var fileName = fileImageSource.File;
 
-            Bitmap bitmap;
-            // Require filename's file exists under Resource/Raw.
-            using (Stream stream = FileSystem.OpenAppPackageFileAsync(fileName).Result)
+            // WinUIでは、画像は Resource/Raw 配下に MauiAsset として登録されている必要がある。
+            using var sourceStream = FileSystem.OpenAppPackageFileAsync(fileName).Result;
+            using var sourceBitmap = (Bitmap)Image.FromStream(sourceStream);
+
+            // 下地となる透明な画像を作る。サイズは元画像の両幅から8px(ウィンドウフレームの幅)ずつはみ出すサイズで。
+            var layerdBitMap = new Bitmap(sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2, sourceBitmap.Height);
+
+            // 透明な背景に画像を重ねる
+            using (var g = Graphics.FromImage(layerdBitMap))
             {
-                bitmap = (Bitmap)Image.FromStream(stream);
+                g.DrawImage(sourceBitmap, WINDOW_FRAME_THICKNESS, 0, sourceBitmap.Width, sourceBitmap.Height);
             }
 
-            GraphicsPath graphicsPath = CalculateControlGraphicsPath(bitmap);
+            // 背景画像から、透明でない部分だけを抜き出したリージョンを作る
+            using GraphicsPath graphicsPath = CalculateControlGraphicsPath(layerdBitMap);
             var reagion = new Region(graphicsPath);
 
+            // 透明でない部分だけを抜き出したリージョンをウィンドウの表示領域として設定する
             MauiWinUIWindow winUIWindow = (MauiWinUIWindow)window.Handler.PlatformView;
             IntPtr hwnd = winUIWindow.WindowHandle;
             using (var graphics = Graphics.FromHwnd(hwnd))
@@ -32,13 +43,29 @@ namespace MyFaveTimerM7
                 SetWindowRgn(hwnd, hrgn, true);
             }
 
-            // .NET 6だと、Window.Width, Heightがない!!
-            window.Width = bitmap.Width;
+            //const int GWL_STYLE = -16;
+            //const Int64 WS_THICKFRAME = 0x00040000L;
+            //const Int64 WS_OVERLAPPED = 0x00000000L;
+            //const Int64 WS_CAPTION = 0x00C00000L;
+            //const Int64 WS_SYSMENU = 0x00080000L;
+            //const Int64 WS_MAXIMIZEBOX = 0x00010000L;
+            //const Int64 WS_MINIMIZEBOX = 0x00020000L;
+            //const Int64 WS_BORDER = 0x00800000L;
+
+            //Int64 style = GetWindowLong(hwnd, GWL_STYLE);
+            //SetWindowLong(hwnd, GWL_STYLE, style & ~WS_THICKFRAME & ~WS_CAPTION & ~WS_SYSMENU & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX & ~WS_BORDER);
+
+            // Imageコントロールのサイズが画像と同じピクセルになるようにウィンドウサイズを固定
+            // ※.NET 6だと、Window.Width, Heightがないので .NET7必須。
+            window.Width = sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2;
             window.MinimumWidth = window.Width;
             window.MaximumWidth = window.Width;
-            window.Height = bitmap.Height;
+            window.Height = sourceBitmap.Height + WINDOW_TITLE_HEIGHT + WINDOW_FRAME_THICKNESS;
             window.MinimumHeight = window.Height;
             window.MaximumHeight = window.Height;
+
+            // 画像をタイトルバー部分に重ねる
+            imageControl.Margin = new Thickness(0, -WINDOW_TITLE_HEIGHT, 0, WINDOW_TITLE_HEIGHT);
 
             //TitleBarは,まだどうにもできない！
             //winUIWindow.ExtendsContentIntoTitleBar = true;
@@ -47,6 +74,12 @@ namespace MyFaveTimerM7
 
         [DllImport("User32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+        [DllImport("USER32.DLL")]
+        public static extern Int64 GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("USER32.DLL")]
+        public static extern int SetWindowLong(IntPtr hWnd, int nIndex, Int64 dwNewLong);
 
         // https://www.codeproject.com/Articles/6048/Creating-Bitmap-Regions-for-Forms-and-Buttons
         private static GraphicsPath CalculateControlGraphicsPath(Bitmap bitmap)
