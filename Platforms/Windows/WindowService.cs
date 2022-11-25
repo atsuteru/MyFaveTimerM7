@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using Windows.Devices.Input;
 using Image = System.Drawing.Image;
 using Region = System.Drawing.Region;
 
@@ -11,6 +12,7 @@ namespace MyFaveTimerM7
         public partial void InitializeWindow(Window window, object parameter)
         {
             const int WINDOW_FRAME_THICKNESS = 3;
+            const int WINDOW_TITLE_SIZEBOX_HEIGHT = 8;
             const int WINDOW_TITLE_HEIGHT = 31;
 
             var imageControl =  (Microsoft.Maui.Controls.Image)parameter;
@@ -22,12 +24,12 @@ namespace MyFaveTimerM7
             using var sourceBitmap = (Bitmap)Image.FromStream(sourceStream);
 
             // 下地となる透明な画像を作る。サイズは元画像の両側にウィンドウフレームの幅を足したサイズで。
-            var layerdBitMap = new Bitmap(sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2, sourceBitmap.Height);
+            var layerdBitMap = new Bitmap(sourceBitmap.Width + WINDOW_FRAME_THICKNESS * 2, sourceBitmap.Height + WINDOW_TITLE_SIZEBOX_HEIGHT);
 
             // 透明な背景に画像を重ねる
             using (var g = Graphics.FromImage(layerdBitMap))
             {
-                g.DrawImage(sourceBitmap, WINDOW_FRAME_THICKNESS, 0, sourceBitmap.Width, sourceBitmap.Height);
+                g.DrawImage(sourceBitmap, WINDOW_FRAME_THICKNESS, WINDOW_TITLE_SIZEBOX_HEIGHT, sourceBitmap.Width, sourceBitmap.Height);
             }
 
             // 背景画像から、透明でない部分だけを抜き出したリージョンを作る
@@ -43,16 +45,12 @@ namespace MyFaveTimerM7
                 SetWindowRgn(hwnd, hrgn, true);
             }
 
-            const int GWL_STYLE = -16;
-            const Int64 WS_SIZEBOX = 0x00040000L; // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
-            const Int64 WS_BORDER = 0x00800000L; // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
-            const Int64 WS_CAPTION = 0x00C00000L; // Mauiでは効かない
-            const Int64 WS_SYSMENU = 0x00080000L; // Mauiでは効かない
-            const Int64 WS_MAXIMIZEBOX = 0x00010000L; // Mauiでは効かない
-            const Int64 WS_MINIMIZEBOX = 0x00020000L; // Mauiでは効かない
-
-            Int64 style = GetWindowLong(hwnd, GWL_STYLE);
-            SetWindowLong(hwnd, GWL_STYLE, style & ~WS_SIZEBOX & ~WS_BORDER & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX);
+            var style = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE);
+            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE, 
+                style 
+                & ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
+                & ~PInvoke.User32.SetWindowLongFlags.WS_BORDER // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
+                );
 
             // Imageコントロールのサイズが画像と同じピクセルになるようにウィンドウサイズを固定
             // ※.NET 6だと、Window.Width, Heightがないので .NET7必須。
@@ -64,21 +62,20 @@ namespace MyFaveTimerM7
             window.MaximumHeight = window.Height;
 
             // 画像をタイトルバー部分に重ねる
-            imageControl.Margin = new Thickness(0, -WINDOW_TITLE_HEIGHT, 0, WINDOW_TITLE_HEIGHT);
+            imageControl.Margin = new Thickness(
+                0,
+                -(WINDOW_TITLE_HEIGHT - WINDOW_TITLE_SIZEBOX_HEIGHT),
+                0,
+                WINDOW_TITLE_HEIGHT - WINDOW_TITLE_SIZEBOX_HEIGHT);
 
-            //TitleBarは,まだどうにもできない！
+            //これでタイトルバーの高さをちっちゃくして、ボタンも無効化できる→それならタイトルエリアをリージョンで削り取る方がまし。
+            //いずれにせよ全体のドラッグ＆ドロップで移動できなければ話にならない
             //winUIWindow.ExtendsContentIntoTitleBar = true;
-            //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid() { Height = 100, Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0x00, 0x00)) });
+            //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
         }
 
         [DllImport("User32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
-
-        [DllImport("USER32.DLL")]
-        public static extern Int64 GetWindowLong(IntPtr hWnd, int nIndex);
-
-        [DllImport("USER32.DLL")]
-        public static extern int SetWindowLong(IntPtr hWnd, int nIndex, Int64 dwNewLong);
 
         // https://www.codeproject.com/Articles/6048/Creating-Bitmap-Regions-for-Forms-and-Buttons
         private static GraphicsPath CalculateControlGraphicsPath(Bitmap bitmap)
