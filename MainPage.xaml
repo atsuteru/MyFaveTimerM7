@@ -2,9 +2,8 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MyFaveTimerM7.MainPage"
-             Shell.NavBarIsVisible="False" BackgroundColor="White">
+             Shell.NavBarIsVisible="False" BackgroundColor="Transparent">
     <Grid>
-        <!-- 左右に10px, 下に30pxの透明エリアを付けた画像にする -->
         <!-- Android は Resource/Images 配下に MauiImage として画像ファイルの登録が必要 -->
         <!-- WinUI は Resource/Raw 配下に MauiAsset として画像ファイルの登録が必要 -->
         <!-- 画像ファイル名は、英小文字で始まる英数字とアンダースコアで命名しなければならない(Androdの制限) -->

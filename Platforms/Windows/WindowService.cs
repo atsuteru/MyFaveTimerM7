@@ -1,7 +1,7 @@
 ﻿using MyFaveTimerM7.Platforms.Windows;
 using System.Diagnostics;
-using System.Drawing;
-using System.Runtime.InteropServices;
+using Bitmap = System.Drawing.Bitmap;
+using Graphics = System.Drawing.Graphics;
 using Point = System.Drawing.Point;
 
 namespace MyFaveTimerM7
@@ -12,48 +12,17 @@ namespace MyFaveTimerM7
         {
             var imageControl = (Microsoft.Maui.Controls.Image)parameter;
 
-            SetWindowStyle(window);
+            window.SetWindowNoBorder();
+            window.SetWindowTransparentable();
+            //これでタイトルバーの高さをちっちゃくして、ボタンも無効化できるが、タイトルエリアをリージョンで削り取る方がましなので使わない
+            //winUIWindow.ExtendsContentIntoTitleBar = true;
+            //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
 
-            SetWindowTransparent(window, 0xAA);
-
+            //window.SetWindowBackground(imageControl, 0xFF); //このやり方はMauiのウィンドウ描画に負けてしまう
+            window.SetWindowTransparent(0xAA);
             SetImageFillToWindow(window, imageControl);
 
             SetDragMovable(window);
-        }
-
-        private static void SetWindowStyle(Window window)
-        {
-            // Windowハンドルの取得
-            IntPtr hwnd = window.GetWindowHandle();
-
-            // Windowスタイルの設定
-            var style = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE);
-            style &= ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX;     // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
-            style &= ~PInvoke.User32.SetWindowLongFlags.WS_BORDER;      // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
-            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE, style);
-        }
-
-        private static void SetWindowTransparent(Window window, byte opacity)
-        {
-            // Windowハンドルの取得
-            IntPtr hwnd = window.GetWindowHandle();
-
-            // Windowを透過可能にする
-            var exStyle = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_EXSTYLE);
-            exStyle ^= PInvoke.User32.SetWindowLongFlags.WS_EX_LAYERED;   // ウィンドウを透過可能にする
-            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle);
-
-            // Windowの透明度を指定する
-            SetLayeredWindowAttributes(hwnd, 0, opacity, LayeredWindowFlags.LWA_ALPHA);
-        }
-
-        [DllImport("user32.dll")]
-        private static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, LayeredWindowFlags dwFlags);
-        [Flags]
-        public enum LayeredWindowFlags
-        {
-            LWA_ALPHA = 0x00000002,
-            LWA_COLORKEY = 0x00000001,
         }
 
         private static void SetImageFillToWindow(Window window, Microsoft.Maui.Controls.Image imageControl)
@@ -89,11 +58,6 @@ namespace MyFaveTimerM7
                 -(WINDOW_TITLE_HEIGHT - WINDOW_TITLE_SIZEBOX_HEIGHT),
                 0,
                 WINDOW_TITLE_HEIGHT - WINDOW_TITLE_SIZEBOX_HEIGHT);
-
-            //これでタイトルバーの高さをちっちゃくして、ボタンも無効化できる→それならタイトルエリアをリージョンで削り取る方がまし。
-            //いずれにせよ全体のドラッグ＆ドロップで移動できなければ話にならない
-            //winUIWindow.ExtendsContentIntoTitleBar = true;
-            //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
         }
 
         private static void SetDragMovable(Window window)

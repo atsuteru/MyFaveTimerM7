@@ -11,10 +11,6 @@ public partial class MainPage : ContentPage
 
 	private void OnCounterClicked(object sender, EventArgs e)
 	{
-        if (count == 0)
-        {
-            //new WindowService().InitializeWindow(App.Current.Windows[0]);
-        }
         count++;
 
 		if (count == 1)
