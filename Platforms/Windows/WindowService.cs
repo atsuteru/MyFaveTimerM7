@@ -1,5 +1,7 @@
 ﻿using MyFaveTimerM7.Platforms.Windows;
+using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using Point = System.Drawing.Point;
 
 namespace MyFaveTimerM7
@@ -11,6 +13,8 @@ namespace MyFaveTimerM7
             var imageControl = (Microsoft.Maui.Controls.Image)parameter;
 
             SetWindowStyle(window);
+
+            SetWindowTransparent(window, 0xAA);
 
             SetImageFillToWindow(window, imageControl);
 
@@ -24,11 +28,32 @@ namespace MyFaveTimerM7
 
             // Windowスタイルの設定
             var style = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE);
-            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE,
-                style
-                & ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
-                & ~PInvoke.User32.SetWindowLongFlags.WS_BORDER // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
-                );
+            style &= ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX;     // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
+            style &= ~PInvoke.User32.SetWindowLongFlags.WS_BORDER;      // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
+            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE, style);
+        }
+
+        private static void SetWindowTransparent(Window window, byte opacity)
+        {
+            // Windowハンドルの取得
+            IntPtr hwnd = window.GetWindowHandle();
+
+            // Windowを透過可能にする
+            var exStyle = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_EXSTYLE);
+            exStyle ^= PInvoke.User32.SetWindowLongFlags.WS_EX_LAYERED;   // ウィンドウを透過可能にする
+            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle);
+
+            // Windowの透明度を指定する
+            SetLayeredWindowAttributes(hwnd, 0, opacity, LayeredWindowFlags.LWA_ALPHA);
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, LayeredWindowFlags dwFlags);
+        [Flags]
+        public enum LayeredWindowFlags
+        {
+            LWA_ALPHA = 0x00000002,
+            LWA_COLORKEY = 0x00000001,
         }
 
         private static void SetImageFillToWindow(Window window, Microsoft.Maui.Controls.Image imageControl)
@@ -85,18 +110,24 @@ namespace MyFaveTimerM7
                 onPointerPressed: (pointerPoint) =>
                 {
                     baseScreenPoint = window.ConvertPointerToScreen(pointerPoint);
+                    Debug.WriteLine($"PointerPoint: ({pointerPoint.Position.X},{pointerPoint.Position.Y}) -> ({baseScreenPoint.X},{baseScreenPoint.Y})");
                     baseWindowPositionX = window.X;
                     baseWindowPositionY = window.Y;
+                    //差は感じない
+                    //PInvoke.User32.GetWindowRect(hwnd, out var screenRect);
+                    //baseWindowPositionX = screenRect.left;
+                    //baseWindowPositionY = screenRect.top;
                 },
                 onPointerDragMoved: (pointerPoint) =>
                 {
                     var currentScreenPoint = window.ConvertPointerToScreen(pointerPoint);
+                    Debug.WriteLine($"PointerPoint: ({pointerPoint.Position.X},{pointerPoint.Position.Y}) -> ({currentScreenPoint.X},{currentScreenPoint.Y})");
                     window.X = baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X);
                     window.Y = baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y);
                     //差は感じない
                     //PInvoke.User32.SetWindowPos(hwnd, PInvoke.User32.SpecialWindowHandles.HWND_TOP,
-                    //    baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X),
-                    //    baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y),
+                    //    (int)(baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X)),
+                    //    (int)(baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y)),
                     //    0, 0,
                     //    PInvoke.User32.SetWindowPosFlags.SWP_NOSIZE);
                 });
