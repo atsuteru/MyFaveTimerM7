@@ -2,38 +2,67 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MyFaveTimerM7.MainPage"
-             Shell.NavBarIsVisible="False" BackgroundColor="Transparent">
+             Shell.NavBarIsVisible="False" BackgroundColor="White">
     <Grid>
         <!-- Android は Resource/Images 配下に MauiImage として画像ファイルの登録が必要 -->
         <!-- WinUI は Resource/Raw 配下に MauiAsset として画像ファイルの登録が必要 -->
         <!-- 画像ファイル名は、英小文字で始まる英数字とアンダースコアで命名しなければならない(Androdの制限) -->
         <Image Source="ochawan3.png" Aspect="AspectFill" Loaded="Image_Loaded"/>
-        <VerticalStackLayout
-            Spacing="25"
-            Padding="30,0"
-            VerticalOptions="Center">
-
-            <Label
-                Text="Hello, World!"
-                SemanticProperties.HeadingLevel="Level1"
-                FontSize="32"
-                HorizontalOptions="Center"/>
-
-            <Label
-                Text="Welcome to .NET Multi-platform App UI"
-                SemanticProperties.HeadingLevel="Level2"
-                SemanticProperties.Description="Welcome to dot net Multi platform App U I"
-                FontSize="18"
-                HorizontalOptions="Center"/>
-
-            <Button
-                x:Name="CounterBtn"
-                Text="Click me"
-                SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnCounterClicked"
-                HorizontalOptions="Center" />
-
-        </VerticalStackLayout>
+        <!-- Clock -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="9*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" x:Name="ClockDate" FontSize="18" FontFamily="DSEG14ModernBoldItalic" TextColor="White" Text="2022/11/27 SUN">
+                <Label.Shadow>
+                    <Shadow Brush="Lime" Offset="3,2" Radius="4" Opacity="1"/>
+                </Label.Shadow>
+            </Label>
+            <Label Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" FontSize="9" FontFamily="DSEG14ModernBoldItalic" TextColor="Transparent" Text=" "/>
+            <Label Grid.Row="3" Grid.Column="2" x:Name="ClockTime" FontSize="32" FontFamily="DSEG14ModernBoldItalic" TextColor="White" Text="00:00:00">
+                <Label.Shadow>
+                    <Shadow Brush="Lime" Offset="3,2" Radius="4" Opacity="1"/>
+                </Label.Shadow>
+            </Label>
+        </Grid>
+        <!-- Alarm Setting -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="19*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="12*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="6*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <TimePicker Grid.Row="1" Grid.Column="1" x:Name="AlarmTimePicker" Time="00:00:00" FontSize="24" Format="HH:mm:ss" TextColor="White" 
+                        IsVisible="{Binding Source={Reference AlarmSwitch}, Path=IsToggled, Converter={StaticResource InvertedBoolConverter}}">
+                <TimePicker.Shadow>
+                    <Shadow Brush="Lime" Offset="3,2" Radius="4" Opacity="{OnPlatform Default=1, WinUI=0}"/>
+                </TimePicker.Shadow>
+            </TimePicker>
+            <Label Grid.Row="1" Grid.Column="1" x:Name="AlarmTime" Text="00:00:00" FontSize="24" FontFamily="DSEG14ModernBoldItalic" HorizontalOptions="Center" 
+                   TextColor="White" IsVisible="{Binding Source={Reference AlarmSwitch}, Path=IsToggled}">
+                <Label.Shadow>
+                    <Shadow Brush="HotPink" Offset="3,2" Radius="4" Opacity="1"/>
+                </Label.Shadow>
+            </Label>
+            <Switch Grid.Row="1" Grid.Column="3" x:Name="AlarmSwitch" Toggled="AlarmSwitch_Toggled" />
+        </Grid>
     </Grid>
 
 </ContentPage>

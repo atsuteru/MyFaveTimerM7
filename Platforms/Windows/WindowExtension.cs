@@ -23,6 +23,12 @@ namespace MyFaveTimerM7.Platforms.Windows
             return new Point(baseScreenPoint.x, baseScreenPoint.y);
         }
 
+        public static void Activate(this Window window)
+        {
+            MauiWinUIWindow winUIWindow = (MauiWinUIWindow)window.Handler.PlatformView;
+            winUIWindow.Activate();
+        }
+
         #region SetWindowNoBorder
         public static void SetWindowNoBorder(this Window window)
         {

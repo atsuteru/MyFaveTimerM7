@@ -1,5 +1,4 @@
 ﻿using MyFaveTimerM7.Platforms.Windows;
-using System.Diagnostics;
 using Bitmap = System.Drawing.Bitmap;
 using Graphics = System.Drawing.Graphics;
 using Point = System.Drawing.Point;
@@ -10,7 +9,12 @@ namespace MyFaveTimerM7
     {
         public partial void InitializeWindow(Window window, object parameter)
         {
-            var imageControl = (Microsoft.Maui.Controls.Image)parameter;
+            window.Stopped += (s, e) =>
+            {
+                AppSemaphore.Dispose();
+            };
+
+            var imageControl = (Image)parameter;
 
             window.SetWindowNoBorder();
             window.SetWindowTransparentable();
@@ -19,10 +23,15 @@ namespace MyFaveTimerM7
             //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
 
             //window.SetWindowBackground(imageControl, 0xFF); //このやり方はMauiのウィンドウ描画に負けてしまう
-            window.SetWindowTransparent(0xAA);
+            window.SetWindowTransparent(0xDD);
             SetImageFillToWindow(window, imageControl);
 
             SetDragMovable(window);
+        }
+
+        public partial void Activate(Window window)
+        {
+            window.Activate();
         }
 
         private static void SetImageFillToWindow(Window window, Microsoft.Maui.Controls.Image imageControl)
@@ -74,7 +83,6 @@ namespace MyFaveTimerM7
                 onPointerPressed: (pointerPoint) =>
                 {
                     baseScreenPoint = window.ConvertPointerToScreen(pointerPoint);
-                    Debug.WriteLine($"PointerPoint: ({pointerPoint.Position.X},{pointerPoint.Position.Y}) -> ({baseScreenPoint.X},{baseScreenPoint.Y})");
                     baseWindowPositionX = window.X;
                     baseWindowPositionY = window.Y;
                     //差は感じない
@@ -85,7 +93,6 @@ namespace MyFaveTimerM7
                 onPointerDragMoved: (pointerPoint) =>
                 {
                     var currentScreenPoint = window.ConvertPointerToScreen(pointerPoint);
-                    Debug.WriteLine($"PointerPoint: ({pointerPoint.Position.X},{pointerPoint.Position.Y}) -> ({currentScreenPoint.X},{currentScreenPoint.Y})");
                     window.X = baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X);
                     window.Y = baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y);
                     //差は感じない

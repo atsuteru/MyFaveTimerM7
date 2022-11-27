@@ -48,6 +48,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Fonts\DSEG14Modern-Bold.ttf" />
+	  <None Remove="Resources\Fonts\DSEG14Modern-BoldItalic.ttf" />
+	  <None Remove="Resources\Fonts\DSEG14Modern-Italic.ttf" />
+	  <None Remove="Resources\Fonts\DSEG14Modern-Light.ttf" />
+	  <None Remove="Resources\Fonts\DSEG14Modern-Regular.ttf" />
 	  <None Remove="Resources\Images\dotnet_bot.png" />
 	  <None Remove="Resources\Images\ochawan3.png" />
 	  <None Remove="Resources\Images\test500px.png" />
@@ -63,6 +68,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Maui" Version="3.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
 		<PackageReference Include="PInvoke.User32" Version="0.7.124" />
 		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
