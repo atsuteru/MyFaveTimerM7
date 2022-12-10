@@ -15,16 +15,15 @@ namespace MyFaveTimerM7
 
             var imageControl = (Image)parameter;
 
+            // ウィンドウの境界線を消す
             window.SetWindowNoBorder();
+            // ウィンドウを透過可能にする
             window.SetWindowTransparentable();
-            //これでタイトルバーの高さをちっちゃくして、ボタンも無効化できるが、タイトルエリアをリージョンで削り取る方がましなので使わない
-            //winUIWindow.ExtendsContentIntoTitleBar = true;
-            //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
-
-            //window.SetWindowBackground(imageControl, 0xFF); //このやり方はMauiのウィンドウ描画に負けてしまう
+            // ウィンドウの初期透過値を設定
             window.SetWindowTransparent(0xFF);
+            // ウィンドウの形状を画像に合わせて切り取る
             SetImageFillToWindow(window, imageControl);
-
+            // ウィンドウの移動を画像のドラッグ移動によってできるようにする
             SetDragMovable(window, imageControl);
         }
 

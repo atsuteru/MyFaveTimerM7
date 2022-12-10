@@ -1,7 +1,4 @@
 ﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using PInvoke;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using static PInvoke.User32;
 using Graphics = System.Drawing.Graphics;
