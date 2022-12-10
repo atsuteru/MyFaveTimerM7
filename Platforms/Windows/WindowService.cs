@@ -1,7 +1,6 @@
 ﻿using MyFaveTimerM7.Platforms.Windows;
 using Bitmap = System.Drawing.Bitmap;
 using Graphics = System.Drawing.Graphics;
-using Point = System.Drawing.Point;
 
 namespace MyFaveTimerM7
 {
@@ -81,37 +80,8 @@ namespace MyFaveTimerM7
 
         private static void SetDragMovable(Window window, VisualElement dragHandleElement)
         {
-            Point baseScreenPoint = default;
-            double baseWindowPositionX = 0d;
-            double baseWindowPositionY = 0d;
-
-            // Windowハンドルの取得
-            IntPtr hwnd = window.GetWindowHandle();
-
-            // 画像上でのドラッグ移動にあわせて、ウィンドウ自体を移動させる
-            dragHandleElement.SubscribePointerDragMoving(
-                onPointerPressed: (pointerPoint) =>
-                {
-                    baseScreenPoint = window.ConvertPointerToScreen(pointerPoint);
-                    baseWindowPositionX = window.X;
-                    baseWindowPositionY = window.Y;
-                    //差は感じない
-                    //PInvoke.User32.GetWindowRect(hwnd, out var screenRect);
-                    //baseWindowPositionX = screenRect.left;
-                    //baseWindowPositionY = screenRect.top;
-                },
-                onPointerDragMoved: (pointerPoint) =>
-                {
-                    var currentScreenPoint = window.ConvertPointerToScreen(pointerPoint);
-                    window.X = baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X);
-                    window.Y = baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y);
-                    //差は感じない
-                    //PInvoke.User32.SetWindowPos(hwnd, PInvoke.User32.SpecialWindowHandles.HWND_TOP,
-                    //    (int)(baseWindowPositionX + (currentScreenPoint.X - baseScreenPoint.X)),
-                    //    (int)(baseWindowPositionY + (currentScreenPoint.Y - baseScreenPoint.Y)),
-                    //    0, 0,
-                    //    PInvoke.User32.SetWindowPosFlags.SWP_NOSIZE);
-                });
+            // 画像上でのドラッグ移動のジェスチャーにより、ウィンドウ自体を移動できるようにする
+            window.SetDragMovable(dragHandleElement);
         }
     }
 }

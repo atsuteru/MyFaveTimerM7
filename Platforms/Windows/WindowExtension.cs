@@ -1,5 +1,7 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using PInvoke;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using static PInvoke.User32;
 using Graphics = System.Drawing.Graphics;
@@ -74,37 +76,39 @@ namespace MyFaveTimerM7.Platforms.Windows
         #endregion
 
         #region SubscribePointerDragMoving
-        public static void SubscribePointerDragMoving(this VisualElement element, Action<PointerPoint> onPointerPressed, Action<PointerPoint> onPointerDragMoved)
+        public static void SetDragMovable(this Window window, VisualElement dragHandleElement)
         {
             bool isPointerPressed = false;
-            DateTime nextMoveTimestamp = default;
+            SafeCursorHandle previousCursorHandle = null;
+            IntPtr hwnd = GetWindowHandle(window);
 
-            var winuiElement = (UIElement)element.Handler.PlatformView;
-            winuiElement.PointerEntered += (s, e) =>
-            {
-                isPointerPressed = false;
-            };
-            winuiElement.PointerExited += (s, e) =>
-            {
-                isPointerPressed = false;
-            };
+            var winuiElement = (UIElement)dragHandleElement.Handler.PlatformView;
             winuiElement.PointerPressed += (s, e) =>
             {
                 isPointerPressed = true;
-                var basePointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
-                onPointerPressed(basePointerPoint);
             };
             winuiElement.PointerReleased += (s, e) =>
             {
+                // Reset Cursor
+                if (previousCursorHandle != null)
+                {
+                    SetCursor(previousCursorHandle);
+                    previousCursorHandle = null;
+                }
                 isPointerPressed = false;
             };
             winuiElement.PointerMoved += (s, e) =>
             {
-                if (isPointerPressed && DateTime.UtcNow >= nextMoveTimestamp)
+                // エレメント上をクリックしたまま「なぞった」場合
+                if (isPointerPressed)
                 {
-                    var currentPointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
-                    onPointerDragMoved(currentPointerPoint);
-                    nextMoveTimestamp = DateTime.UtcNow.AddMilliseconds(8);
+                    // カーソルを「移動：の形状に変更
+                    previousCursorHandle = SetCursor(LoadCursor(IntPtr.Zero, 32646/*IDC_SIZEALL*/));
+
+                    // タイトルバーがクリックされたことにする → ウィンドウの移動ができる
+                    // https://www.codeproject.com/Articles/11114/Move-window-form-without-Titlebar-in-C
+                    ReleaseCapture();
+                    SendMessage(hwnd, WindowMessage.WM_NCLBUTTONDOWN, 0x2/*HT_CAPTION*/, IntPtr.Zero);
                 }
             };
         }
