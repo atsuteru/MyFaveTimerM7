@@ -32,6 +32,7 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.png" Color="#512BD4" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -65,12 +66,6 @@
 	  <None Remove="Resources\Raw\test.png" />
 	  <None Remove="Resources\Raw\test2.png" />
 	  <None Remove="Resources\Raw\test500px.png" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <MauiIcon Include="Resources\AppIcon\ochawan3_icon.png">
-	    <LogicalName>%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
-	  </MauiIcon>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -111,10 +106,6 @@
 	  <MauiXaml Update="SettingsPage_WinUI.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Update="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 	</ItemGroup>
 
 </Project>
