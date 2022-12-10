@@ -32,7 +32,6 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -48,6 +47,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\AppIcon\ochawan3_icon.png" />
 	  <None Remove="Resources\Fonts\DSEG14Modern-Bold.ttf" />
 	  <None Remove="Resources\Fonts\DSEG14Modern-BoldItalic.ttf" />
 	  <None Remove="Resources\Fonts\DSEG14Modern-Italic.ttf" />
@@ -65,6 +65,12 @@
 	  <None Remove="Resources\Raw\test.png" />
 	  <None Remove="Resources\Raw\test2.png" />
 	  <None Remove="Resources\Raw\test500px.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiIcon Include="Resources\AppIcon\ochawan3_icon.png">
+	    <LogicalName>%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+	  </MauiIcon>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -96,6 +102,10 @@
 	  <MauiImage Update="Resources\Images\ochawan3.png">
 	    <LogicalName>%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
 	  </MauiImage>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
 	</ItemGroup>
 
 </Project>
