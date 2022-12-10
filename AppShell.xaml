@@ -4,11 +4,17 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:MyFaveTimerM7"
-    Shell.FlyoutBehavior="Disabled">
+    Shell.FlyoutBehavior="Flyout" FlyoutBackground="#88000000">
 
     <ShellContent
         Title="Home"
         ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
+
+    <FlyoutItem Title="Settings" IsVisible="{OnPlatform Default=False, WinUI=True}">
+        <Tab>
+            <ShellContent ContentTemplate="{DataTemplate local:SettingsPage_WinUI}"/>
+        </Tab>
+    </FlyoutItem>
 
 </Shell>

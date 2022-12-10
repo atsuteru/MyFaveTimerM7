@@ -23,10 +23,20 @@ namespace MyFaveTimerM7
             //winUIWindow.SetTitleBar(new Microsoft.UI.Xaml.Controls.Grid());
 
             //window.SetWindowBackground(imageControl, 0xFF); //このやり方はMauiのウィンドウ描画に負けてしまう
-            window.SetWindowTransparent(0xDD);
+            window.SetWindowTransparent(0xFF);
             SetImageFillToWindow(window, imageControl);
 
-            SetDragMovable(window);
+            SetDragMovable(window, imageControl);
+        }
+
+        public partial void SetWindowTransparency(Window window, byte opacity)
+        {
+            window.SetWindowTransparent(opacity);
+        }
+
+        public partial void SetWindowLockToTop(Window window, bool isLockToTop)
+        {
+            window.SetWindowLockToTop(isLockToTop);
         }
 
         public partial void Activate(Window window)
@@ -69,7 +79,7 @@ namespace MyFaveTimerM7
                 WINDOW_TITLE_HEIGHT - WINDOW_TITLE_SIZEBOX_HEIGHT);
         }
 
-        private static void SetDragMovable(Window window)
+        private static void SetDragMovable(Window window, VisualElement dragHandleElement)
         {
             Point baseScreenPoint = default;
             double baseWindowPositionX = 0d;
@@ -79,7 +89,7 @@ namespace MyFaveTimerM7
             IntPtr hwnd = window.GetWindowHandle();
 
             // 画像上でのドラッグ移動にあわせて、ウィンドウ自体を移動させる
-            window.SubscribePointerDragMoving(
+            dragHandleElement.SubscribePointerDragMoving(
                 onPointerPressed: (pointerPoint) =>
                 {
                     baseScreenPoint = window.ConvertPointerToScreen(pointerPoint);

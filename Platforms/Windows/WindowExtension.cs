@@ -1,9 +1,12 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using System.Runtime.InteropServices;
+using static PInvoke.User32;
 using Graphics = System.Drawing.Graphics;
 using Point = System.Drawing.Point;
 using PointerPoint = Microsoft.UI.Input.PointerPoint;
 using Region = System.Drawing.Region;
+using Window = Microsoft.Maui.Controls.Window;
 
 namespace MyFaveTimerM7.Platforms.Windows
 {
@@ -19,7 +22,7 @@ namespace MyFaveTimerM7.Platforms.Windows
         {
             IntPtr hwnd = GetWindowHandle(window);
             var baseScreenPoint = new PInvoke.POINT() { x = (int)clientPointerPoint.Position.X, y = (int)clientPointerPoint.Position.Y };
-            PInvoke.User32.ClientToScreen(hwnd, ref baseScreenPoint);
+            ClientToScreen(hwnd, ref baseScreenPoint);
             return new Point(baseScreenPoint.x, baseScreenPoint.y);
         }
 
@@ -36,10 +39,10 @@ namespace MyFaveTimerM7.Platforms.Windows
             IntPtr hwnd = window.GetWindowHandle();
 
             // Windowスタイルの設定
-            var style = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE);
-            style &= ~PInvoke.User32.SetWindowLongFlags.WS_SIZEBOX;     // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
-            style &= ~PInvoke.User32.SetWindowLongFlags.WS_BORDER;      // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
-            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_STYLE, style);
+            var style = (SetWindowLongFlags)GetWindowLong(hwnd, WindowLongIndexFlags.GWL_STYLE);
+            style &= ~SetWindowLongFlags.WS_SIZEBOX;     // 左右と下方向のサイズ変更領域の有無（無にすればマウスカーソルが変わらなくなる）
+            style &= ~SetWindowLongFlags.WS_BORDER;      // ウィンドウの境界線の有無 (無にすればWin10だと5pxが削れる）
+            SetWindowLong(hwnd, WindowLongIndexFlags.GWL_STYLE, style);
         }
         #endregion
 
@@ -50,9 +53,9 @@ namespace MyFaveTimerM7.Platforms.Windows
             IntPtr hwnd = window.GetWindowHandle();
 
             // Windowを透過可能にする
-            var exStyle = (PInvoke.User32.SetWindowLongFlags)PInvoke.User32.GetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_EXSTYLE);
-            exStyle ^= PInvoke.User32.SetWindowLongFlags.WS_EX_LAYERED;   // ウィンドウを透過可能にする
-            PInvoke.User32.SetWindowLong(hwnd, PInvoke.User32.WindowLongIndexFlags.GWL_EXSTYLE, exStyle);
+            var exStyle = (SetWindowLongFlags)GetWindowLong(hwnd, WindowLongIndexFlags.GWL_EXSTYLE);
+            exStyle ^= SetWindowLongFlags.WS_EX_LAYERED;   // ウィンドウを透過可能にする
+            SetWindowLong(hwnd, WindowLongIndexFlags.GWL_EXSTYLE, exStyle);
         }
         #endregion
 
@@ -71,31 +74,31 @@ namespace MyFaveTimerM7.Platforms.Windows
         #endregion
 
         #region SubscribePointerDragMoving
-        public static void SubscribePointerDragMoving(this Window window, Action<PointerPoint> onPointerPressed, Action<PointerPoint> onPointerDragMoved)
+        public static void SubscribePointerDragMoving(this VisualElement element, Action<PointerPoint> onPointerPressed, Action<PointerPoint> onPointerDragMoved)
         {
             bool isPointerPressed = false;
             DateTime nextMoveTimestamp = default;
 
-            var winuiControl = (Panel)((MauiWinUIWindow)window.Handler.PlatformView).Content;
-            winuiControl.PointerEntered += (s, e) =>
+            var winuiElement = (UIElement)element.Handler.PlatformView;
+            winuiElement.PointerEntered += (s, e) =>
             {
                 isPointerPressed = false;
             };
-            winuiControl.PointerExited += (s, e) =>
+            winuiElement.PointerExited += (s, e) =>
             {
                 isPointerPressed = false;
             };
-            winuiControl.PointerPressed += (s, e) =>
+            winuiElement.PointerPressed += (s, e) =>
             {
                 isPointerPressed = true;
                 var basePointerPoint = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)s);
                 onPointerPressed(basePointerPoint);
             };
-            winuiControl.PointerReleased += (s, e) =>
+            winuiElement.PointerReleased += (s, e) =>
             {
                 isPointerPressed = false;
             };
-            winuiControl.PointerMoved += (s, e) =>
+            winuiElement.PointerMoved += (s, e) =>
             {
                 if (isPointerPressed && DateTime.UtcNow >= nextMoveTimestamp)
                 {
@@ -136,8 +139,8 @@ namespace MyFaveTimerM7.Platforms.Windows
             using var bitmap = imageControl.GetBitmap();
 
             // ウィンドウの形状をビットマップに合わせて変更
-            PInvoke.User32.SetWindowPos(hwnd, 0, 0, 0, bitmap.Width, bitmap.Height, PInvoke.User32.SetWindowPosFlags.SWP_NOMOVE | PInvoke.User32.SetWindowPosFlags.SWP_NOZORDER);
-            PInvoke.User32.GetWindowRect(hwnd, out var screenRect);
+            SetWindowPos(hwnd, 0, 0, 0, bitmap.Width, bitmap.Height, SetWindowPosFlags.SWP_NOMOVE | SetWindowPosFlags.SWP_NOZORDER);
+            GetWindowRect(hwnd, out var screenRect);
 
             IntPtr hBitmap = IntPtr.Zero;
             IntPtr oldBitmap = IntPtr.Zero;
@@ -255,6 +258,19 @@ namespace MyFaveTimerM7.Platforms.Windows
                 this.cx = cx;
                 this.cy = cy;
             }
+        }
+        #endregion
+
+        #region SetWindowLockToTop
+        public static void SetWindowLockToTop(this Window window, bool isLockToTop)
+        {
+            // Windowハンドルの取得
+            IntPtr hwnd = window.GetWindowHandle();
+
+            // Windowの最前面設定／最前面解除
+            SetWindowPos(hwnd, 
+                isLockToTop ? SpecialWindowHandles.HWND_TOPMOST : SpecialWindowHandles.HWND_NOTOPMOST,
+                0, 0, 0, 0, SetWindowPosFlags.SWP_NOMOVE | SetWindowPosFlags.SWP_NOSIZE);
         }
         #endregion
     }

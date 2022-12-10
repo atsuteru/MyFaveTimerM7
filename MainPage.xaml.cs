@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
+using System.Diagnostics;
 using Font = Microsoft.Maui.Font;
 
 namespace MyFaveTimerM7;
@@ -62,6 +63,11 @@ public partial class MainPage : ContentPage
             time = DateTime.Now;
             timespan = AlarmTimePicker.Time - new TimeSpan(time.Hour, time.Minute, time.Second);
         }
+    }
+
+    private void TapGestureRecognizer_Tapped(object sender, TappedEventArgs e)
+    {
+        Shell.Current.FlyoutIsPresented = true;
     }
 }
 

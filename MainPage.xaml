@@ -4,6 +4,9 @@
              x:Class="MyFaveTimerM7.MainPage"
              Shell.NavBarIsVisible="False" BackgroundColor="White">
     <Grid>
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="TapGestureRecognizer_Tapped"/>
+        </Grid.GestureRecognizers>
         <!-- Android は Resource/Images 配下に MauiImage として画像ファイルの登録が必要 -->
         <!-- WinUI は Resource/Raw 配下に MauiAsset として画像ファイルの登録が必要 -->
         <!-- 画像ファイル名は、英小文字で始まる英数字とアンダースコアで命名しなければならない(Androdの制限) -->
